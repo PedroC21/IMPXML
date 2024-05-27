@@ -116,7 +116,7 @@ class LoginWindow:
         self.master.geometry("1366x786")
 
         # Conecta ao banco de dados SQLite
-        self.conn = sqlite3.connect("users.db")
+        self.conn = sqlite3.connect("database/users.db")
         self.create_table()  # Cria a tabela de usuários se ainda não existir
 
         self.label = ttk.Label(master, text="Login", font=("Arial", 18))
