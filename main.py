@@ -1,5 +1,5 @@
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+import customtkinter as ctk
+from tkinter import filedialog, messagebox
 import sqlite3
 import requests
 import xml.etree.ElementTree as ET
@@ -8,36 +8,47 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
-from PIL import Image, ImageTk  # Importa a biblioteca Pillow
+from PIL import Image, ImageTk
 
 class XMLImporterApp:
     def __init__(self, master):
         self.master = master
         master.title("Importador de XML")
 
-        self.frame = ttk.Frame(master, padding="40")
-        self.frame.pack()
+        # Configurar tema do customtkinter
+        ctk.set_appearance_mode("dark")  # Modos: "System" (padrão), "Dark", "Light"
+        ctk.set_default_color_theme("blue")  # Temas: "blue" (padrão), "green", "dark-blue"
 
-        self.label = ttk.Label(self.frame, text="Insira o CNPJ para buscar o XML:", font=("Arial", 14))
-        self.label.grid(row=0, column=0, columnspan=2, pady=10)
+        self.frame = ctk.CTkFrame(master)
+        self.frame.pack(pady=20, padx=20, fill="both", expand=True)
 
-        self.cnpj_entry = ttk.Entry(self.frame, font=("Arial", 12))
-        self.cnpj_entry.grid(row=0, column=2, padx=5, pady=10)
+        self.label = ctk.CTkLabel(self.frame, text="Insira o CNPJ para buscar o XML:", font=ctk.CTkFont(size=14))
+        self.label.grid(row=0, column=0, columnspan=2, pady=10, sticky="w")
 
-        self.fetch_button = ttk.Button(self.frame, text="Buscar XML", command=self.fetch_xml)
-        self.fetch_button.grid(row=0, column=3, padx=5, pady=10)
+        self.cnpj_entry = ctk.CTkEntry(self.frame, font=ctk.CTkFont(size=12))
+        self.cnpj_entry.grid(row=0, column=2, padx=5, pady=10, sticky="ew")
 
-        self.import_button = ttk.Button(self.frame, text="Importar XML", command=self.import_xml)
-        self.import_button.grid(row=1, column=0, columnspan=2, pady=20)
+        self.fetch_button = ctk.CTkButton(self.frame, text="Buscar XML", command=self.fetch_xml)
+        self.fetch_button.grid(row=0, column=3, padx=5, pady=10, sticky="ew")
 
-        self.export_button = ttk.Button(self.frame, text="Exportar para PDF", command=self.export_to_pdf)
-        self.export_button.grid(row=1, column=2, columnspan=2, pady=20)
+        self.import_button = ctk.CTkButton(self.frame, text="Importar XML", command=self.import_xml)
+        self.import_button.grid(row=1, column=0, columnspan=2, pady=20, sticky="ew")
 
-        self.text_area = tk.Text(self.frame, width=100, height=30, font=("Courier", 12))
-        self.text_area.grid(row=2, column=0, columnspan=4, padx=5, pady=20)
+        self.export_button = ctk.CTkButton(self.frame, text="Exportar para PDF", command=self.export_to_pdf)
+        self.export_button.grid(row=1, column=2, columnspan=2, pady=20, sticky="ew")
 
-        self.signature_label = ttk.Label(master, text="Desenvolvido por GNP Tech", font=("Arial", 10))
-        self.signature_label.pack(side=tk.BOTTOM, pady=10)
+        self.text_area = ctk.CTkTextbox(self.frame, width=100, height=30, font=("Courier", 12))
+        self.text_area.grid(row=2, column=0, columnspan=4, padx=5, pady=20, sticky="nsew")
+
+        self.signature_label = ctk.CTkLabel(master, text="Desenvolvido por GNP Tech", font=ctk.CTkFont(size=10))
+        self.signature_label.pack(side=ctk.BOTTOM, pady=10)
+
+        # Configurar expansão de colunas e linhas
+        self.frame.grid_columnconfigure(0, weight=1)
+        self.frame.grid_columnconfigure(1, weight=1)
+        self.frame.grid_columnconfigure(2, weight=1)
+        self.frame.grid_columnconfigure(3, weight=1)
+        self.frame.grid_rowconfigure(2, weight=1)
 
     def fetch_xml(self):
         cnpj = self.cnpj_entry.get()
@@ -64,8 +75,8 @@ class XMLImporterApp:
         xml_dom = xml.dom.minidom.parseString(xml_content)
         pretty_xml = xml_dom.toprettyxml()
 
-        self.text_area.delete(1.0, tk.END)
-        self.text_area.insert(tk.END, pretty_xml)
+        self.text_area.delete("1.0", ctk.END)
+        self.text_area.insert(ctk.END, pretty_xml)
 
     def import_xml(self):
         file_path = filedialog.askopenfilename(filetypes=[("XML files", "*.xml")])
@@ -78,7 +89,7 @@ class XMLImporterApp:
                 messagebox.showerror("Erro", f"Ocorreu um erro ao importar o arquivo XML:\n{e}")
 
     def export_to_pdf(self):
-        xml_content = self.text_area.get(1.0, tk.END)
+        xml_content = self.text_area.get("1.0", ctk.END)
 
         if not xml_content.strip():
             messagebox.showerror("Erro", "Nenhum conteúdo XML para exportar.")
@@ -180,32 +191,32 @@ class LoginWindow:
         self.create_table()
 
         # Fundo da tela
-        self.canvas = tk.Canvas(master, width=1366, height=768)
+        self.canvas = ctk.CTkCanvas(master, width=1366, height=768)
         self.canvas.pack()
         self.bg_image = ImageTk.PhotoImage(Image.open('background.jpg'))
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.bg_image)
+        self.canvas.create_image(0, 0, anchor=ctk.NW, image=self.bg_image)
 
         # Frame para o conteúdo
-        self.frame = tk.Frame(master, bg='black', highlightbackground='white', highlightthickness=1, bd=10) # Frame com borda branca
-        self.frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER) # Centraliza o frame
+        self.frame = ctk.CTkFrame(master, fg_color='black', corner_radius=10)
+        self.frame.place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
 
-        self.label = ttk.Label(self.frame, text="Login", font=("Arial", 18), background='black', foreground='white')
+        self.label = ctk.CTkLabel(self.frame, text="Login", font=ctk.CTkFont(size=18), text_color='white')
         self.label.pack(pady=10)
 
-        self.username_label = ttk.Label(self.frame, text="Nome de usuário:", background='black', foreground='white')
+        self.username_label = ctk.CTkLabel(self.frame, text="Nome de usuário:", text_color='white')
         self.username_label.pack(pady=5)
-        self.username_entry = ttk.Entry(self.frame)
+        self.username_entry = ctk.CTkEntry(self.frame)
         self.username_entry.pack(pady=5)
 
-        self.password_label = ttk.Label(self.frame, text="Senha:", background='black', foreground='white')
+        self.password_label = ctk.CTkLabel(self.frame, text="Senha:", text_color='white')
         self.password_label.pack(pady=5)
-        self.password_entry = ttk.Entry(self.frame, show="*")
+        self.password_entry = ctk.CTkEntry(self.frame, show="*")
         self.password_entry.pack(pady=5)
 
-        self.login_button = ttk.Button(self.frame, text="Login", command=self.login)
+        self.login_button = ctk.CTkButton(self.frame, text="Login", command=self.login)
         self.login_button.pack(pady=5)
 
-        self.create_user_button = ttk.Button(self.frame, text="Criar Usuário", command=self.open_create_user_window)
+        self.create_user_button = ctk.CTkButton(self.frame, text="Criar Usuário", command=self.open_create_user_window)
         self.create_user_button.pack(pady=5)
 
     def create_table(self):
@@ -235,21 +246,21 @@ class LoginWindow:
             messagebox.showerror("Erro", "Nome de usuário ou senha incorretos.")
 
     def open_create_user_window(self):
-        create_user_window = tk.Toplevel(self.master)
+        create_user_window = ctk.CTkToplevel(self.master)
         create_user_window.title("Criar Usuário")
         create_user_window.geometry("400x300")
 
-        label = ttk.Label(create_user_window, text="Criar Novo Usuário", font=("Arial", 18))
+        label = ctk.CTkLabel(create_user_window, text="Criar Novo Usuário", font=ctk.CTkFont(size=18))
         label.pack(pady=10)
 
-        username_label = ttk.Label(create_user_window, text="Nome de usuário:")
+        username_label = ctk.CTkLabel(create_user_window, text="Nome de usuário:")
         username_label.pack(pady=5)
-        username_entry = ttk.Entry(create_user_window)
+        username_entry = ctk.CTkEntry(create_user_window)
         username_entry.pack(pady=5)
 
-        password_label = ttk.Label(create_user_window, text="Senha:")
+        password_label = ctk.CTkLabel(create_user_window, text="Senha:")
         password_label.pack(pady=5)
-        password_entry = ttk.Entry(create_user_window, show="*")
+        password_entry = ctk.CTkEntry(create_user_window, show="*")
         password_entry.pack(pady=5)
 
         def create_user():
@@ -265,15 +276,15 @@ class LoginWindow:
             except sqlite3.IntegrityError:
                 messagebox.showerror("Erro", "Nome de usuário já existe.")
 
-        create_button = ttk.Button(create_user_window, text="Criar", command=create_user)
+        create_button = ctk.CTkButton(create_user_window, text="Criar", command=create_user)
         create_button.pack(pady=5)
 
     def open_main_app(self):
-        main_app_window = tk.Tk()
+        main_app_window = ctk.CTk()
         app = XMLImporterApp(main_app_window)
         main_app_window.mainloop()
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root = ctk.CTk()
     login_app = LoginWindow(root)
     root.mainloop()
