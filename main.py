@@ -5,15 +5,15 @@ import requests
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
 from PIL import Image, ImageTk
 
 class XMLImporterApp:
     def __init__(self, master):
         self.master = master
         master.title("Importador de XML")
+        self.master.geometry("1366x768")
 
         # Configurar tema do customtkinter
         ctk.set_appearance_mode("dark")  # Modos: "System" (padrão), "Dark", "Light"
@@ -103,82 +103,82 @@ class XMLImporterApp:
             except Exception as e:
                 messagebox.showerror("Erro", f"Ocorreu um erro ao exportar para PDF:\n{e}")
 
-    def create_pdf(self, file_path, xml_content):
-        # Parse the XML content
+    def parse_nfe(self, xml_content):
         root = ET.fromstring(xml_content)
-        
-        # Extract necessary data
-        emitente = root.find(".//emit/xNome")
-        destinatario = root.find(".//dest/xNome")
-        valor_total = root.find(".//total/ICMSTot/vNF")
-        chave_acesso = root.find(".//infProt/chNFe")
-        
-        # Handle None values
-        emitente_text = emitente.text if emitente is not None else "N/A"
-        destinatario_text = destinatario.text if destinatario is not None else "N/A"
-        valor_total_text = valor_total.text if valor_total is not None else "N/A"
-        chave_acesso_text = chave_acesso.text if chave_acesso is not None else "N/A"
-        
-        # Create a PDF document
-        doc = SimpleDocTemplate(file_path, pagesize=A4)
-        styles = getSampleStyleSheet()
-        elements = []
+        ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
 
-        # Add DANFE title
-        title = Paragraph("DANFE - Documento Auxiliar da Nota Fiscal Eletrônica", styles['Title'])
-        elements.append(title)
-        elements.append(Spacer(1, 12))
+        data = {
+            'emitente': {
+                'nome': root.find('.//nfe:emit/nfe:xNome', ns).text,
+                'cnpj': root.find('.//nfe:emit/nfe:CNPJ', ns).text,
+                'endereco': root.find('.//nfe:emit/nfe:enderEmit/nfe:xLgr', ns).text,
+                'bairro': root.find('.//nfe:emit/nfe:enderEmit/nfe:xBairro', ns).text,
+                'cidade': root.find('.//nfe:emit/nfe:enderEmit/nfe:xMun', ns).text,
+                'uf': root.find('.//nfe:emit/nfe:enderEmit/nfe:UF', ns).text,
+            },
+            'destinatario': {
+                'nome': root.find('.//nfe:dest/nfe:xNome', ns).text,
+                'cnpj': root.find('.//nfe:dest/nfe:CNPJ', ns).text,
+                'endereco': root.find('.//nfe:dest/nfe:enderDest/nfe:xLgr', ns).text,
+                'bairro': root.find('.//nfe:dest/nfe:enderDest/nfe:xBairro', ns).text,
+                'cidade': root.find('.//nfe:dest/nfe:enderDest/nfe:xMun', ns).text,
+                'uf': root.find('.//nfe:dest/nfe:enderDest/nfe:UF', ns).text,
+            },
+            'produtos': []
+        }
 
-        # Add Chave de Acesso
-        chave_paragraph = Paragraph(f"Chave de Acesso: {chave_acesso_text}", styles['Normal'])
-        elements.append(chave_paragraph)
-        elements.append(Spacer(1, 12))
+        for prod in root.findall('.//nfe:det', ns):
+            produto = {
+                'descricao': prod.find('.//nfe:prod/nfe:xProd', ns).text,
+                'quantidade': prod.find('.//nfe:prod/nfe:qCom', ns).text,
+                'valor': prod.find('.//nfe:prod/nfe:vProd', ns).text
+            }
+            data['produtos'].append(produto)
 
-        # Add Emitente and Destinatário
-        emitente_paragraph = Paragraph(f"Emitente: {emitente_text}", styles['Normal'])
-        elements.append(emitente_paragraph)
-        elements.append(Spacer(1, 12))
+        return data
 
-        destinatario_paragraph = Paragraph(f"Destinatário: {destinatario_text}", styles['Normal'])
-        elements.append(destinatario_paragraph)
-        elements.append(Spacer(1, 12))
+    def generate_danfe(self, data, output_file):
+        c = canvas.Canvas(output_file, pagesize=A4)
+        width, height = A4
 
-        # Add Valor Total
-        valor_paragraph = Paragraph(f"Valor Total: R$ {valor_total_text}", styles['Normal'])
-        elements.append(valor_paragraph)
-        elements.append(Spacer(1, 12))
+        # Cabeçalho
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(20 * mm, height - 20 * mm, "DANFE")
 
-        # Create a table for the items
-        table_data = [['Descrição', 'Quantidade', 'Valor Unitário', 'Valor Total']]
-        items = root.findall(".//det")
+        # Dados do Emitente
+        c.setFont("Helvetica", 10)
+        c.drawString(20 * mm, height - 40 * mm, f"Emitente: {data['emitente']['nome']}")
+        c.drawString(20 * mm, height - 45 * mm, f"CNPJ: {data['emitente']['cnpj']}")
+        c.drawString(20 * mm, height - 50 * mm, f"Endereço: {data['emitente']['endereco']}, Bairro: {data['emitente']['bairro']}")
+        c.drawString(20 * mm, height - 55 * mm, f"Cidade: {data['emitente']['cidade']}, UF: {data['emitente']['uf']}")
 
-        for item in items:
-            descricao = item.find(".//prod/xProd")
-            quantidade = item.find(".//prod/qCom")
-            valor_unitario = item.find(".//prod/vUnCom")
-            valor_total_item = item.find(".//prod/vProd")
-            
-            descricao_text = descricao.text if descricao is not None else "N/A"
-            quantidade_text = quantidade.text if quantidade is not None else "N/A"
-            valor_unitario_text = valor_unitario.text if valor_unitario is not None else "N/A"
-            valor_total_item_text = valor_total_item.text if valor_total_item is not None else "N/A"
-            
-            table_data.append([descricao_text, quantidade_text, valor_unitario_text, valor_total_item_text])
+        # Dados do Destinatário
+        c.drawString(20 * mm, height - 70 * mm, f"Destinatário: {data['destinatario']['nome']}")
+        c.drawString(20 * mm, height - 75 * mm, f"CNPJ: {data['destinatario']['cnpj']}")
+        c.drawString(20 * mm, height - 80 * mm, f"Endereço: {data['destinatario']['endereco']}, Bairro: {data['destinatario']['bairro']}")
+        c.drawString(20 * mm, height - 85 * mm, f"Cidade: {data['destinatario']['cidade']}, UF: {data['destinatario']['uf']}")
 
-        table = Table(table_data, colWidths=[200, 100, 100, 100])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        elements.append(table)
+        # Tabela de Produtos
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(20 * mm, height - 100 * mm, "Produtos")
+        c.setFont("Helvetica", 10)
 
-        # Build the PDF
-        doc.build(elements)
+        y = height - 110 * mm
+        c.drawString(20 * mm, y, "Descrição")
+        c.drawString(100 * mm, y, "Quantidade")
+        c.drawString(130 * mm, y, "Valor")
+
+        for produto in data['produtos']:
+            y -= 5 * mm
+            c.drawString(20 * mm, y, produto['descricao'])
+            c.drawString(100 * mm, y, produto['quantidade'])
+            c.drawString(130 * mm, y, produto['valor'])
+
+        c.save()
+
+    def create_pdf(self, file_path, xml_content):
+        data = self.parse_nfe(xml_content)
+        self.generate_danfe(data, file_path)
 
 class LoginWindow:
     def __init__(self, master):
@@ -190,27 +190,21 @@ class LoginWindow:
         self.conn = sqlite3.connect('database/users.db')
         self.create_table()
 
-        # Fundo da tela
-        self.canvas = ctk.CTkCanvas(master, width=1366, height=768)
-        self.canvas.pack()
-        self.bg_image = ImageTk.PhotoImage(Image.open('background.jpg'))
-        self.canvas.create_image(0, 0, anchor=ctk.NW, image=self.bg_image)
-
-        # Frame para o conteúdo
-        self.frame = ctk.CTkFrame(master, fg_color='black', corner_radius=10)
+       # Frame para o conteúdo (fundo transparente)
+        self.frame = ctk.CTkFrame(master, fg_color='transparent', bg_color='transparent', corner_radius=10)
         self.frame.place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
 
-        self.label = ctk.CTkLabel(self.frame, text="Login", font=ctk.CTkFont(size=18), text_color='white')
+        self.label = ctk.CTkLabel(self.frame, text="Login", font=ctk.CTkFont(size=18), text_color='white', fg_color='transparent', bg_color='transparent')
         self.label.pack(pady=10)
 
-        self.username_label = ctk.CTkLabel(self.frame, text="Nome de usuário:", text_color='white')
+        self.username_label = ctk.CTkLabel(self.frame, text="Nome de usuário:", text_color='white', fg_color='transparent', bg_color='transparent')
         self.username_label.pack(pady=5)
-        self.username_entry = ctk.CTkEntry(self.frame)
+        self.username_entry = ctk.CTkEntry(self.frame, fg_color='transparent', bg_color='transparent')
         self.username_entry.pack(pady=5)
 
-        self.password_label = ctk.CTkLabel(self.frame, text="Senha:", text_color='white')
+        self.password_label = ctk.CTkLabel(self.frame, text="Senha:", text_color='white', fg_color='transparent', bg_color='transparent')
         self.password_label.pack(pady=5)
-        self.password_entry = ctk.CTkEntry(self.frame, show="*")
+        self.password_entry = ctk.CTkEntry(self.frame, show="*", fg_color='transparent', bg_color='transparent')
         self.password_entry.pack(pady=5)
 
         self.login_button = ctk.CTkButton(self.frame, text="Login", command=self.login)
