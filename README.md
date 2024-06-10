@@ -20,3 +20,9 @@ Integrar o sistema com outras ferramentas e sistemas utilizados pela GNP Tech e 
 Link da Apresentação do Projeto
 
 https://drive.google.com/file/d/1pw52MA_2uqM4f6CXAqNrVBG7eddeUamv/view?usp=sharing
+
+Para o funcionamento do projeto
+1 - Replicar o repositorio ou realizar o Download
+2 - Instalar as Bibliotecas e Dependencias 
+3 - Via terminal ative o Ambiente virtual
+4 - Inicie o projeto com as informações? python app.py 
