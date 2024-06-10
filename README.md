@@ -17,3 +17,6 @@ Personalizar o sistema de acordo com as necessidades específicas da GNP Tech e 
 Garantir a segurança dos dados durante todo o processo de importação e armazenamento.
 Integrar o sistema com outras ferramentas e sistemas utilizados pela GNP Tech e por seus clientes.
 
+Link da Apresentação do Projeto
+
+https://drive.google.com/file/d/1pw52MA_2uqM4f6CXAqNrVBG7eddeUamv/view?usp=sharing
